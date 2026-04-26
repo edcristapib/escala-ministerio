@@ -1,0 +1,1545 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="description" content="Gestão de escala dos ministérios de sonoplastia e bateristas" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Escala Ministério" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <title>Escala Ministério</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ── DESIGN TOKENS ── */
+    :root {
+      --bg:         #080c14;
+      --surface:    #0f172a;
+      --card:       #141f35;
+      --border:     rgba(99,179,237,0.12);
+      --gold:       #c9a84c;
+      --gold-light: #e8c97e;
+      --gold-dim:   rgba(201,168,76,0.15);
+      --sky:        #63b3ed;
+      --sky-dim:    rgba(99,179,237,0.12);
+      --success:    #48bb78;
+      --danger:     #fc8181;
+      --warn:       #f6ad55;
+      --text:       #e2e8f0;
+      --muted:      #718096;
+      --radius:     14px;
+      --shadow:     0 8px 40px rgba(0,0,0,0.5);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Lato', sans-serif;
+      font-weight: 400;
+      min-height: 100dvh;
+      overflow-x: hidden;
+    }
+
+    /* ── BACKGROUND TEXTURE ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 20% 10%, rgba(201,168,76,0.05) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 85% 80%, rgba(99,179,237,0.05) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    /* ── LAYOUT ── */
+    #app { position: relative; z-index: 1; max-width: 480px; margin: 0 auto; padding-bottom: 80px; }
+
+    /* ── HEADER ── */
+    header {
+      padding: 48px 20px 24px;
+      text-align: center;
+      position: relative;
+    }
+    .header-cross {
+      font-size: 28px;
+      letter-spacing: 4px;
+      color: var(--gold);
+      opacity: 0.7;
+      margin-bottom: 8px;
+      animation: pulse 3s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:.5} 50%{opacity:.9} }
+
+    header h1 {
+      font-family: 'Cinzel', serif;
+      font-size: clamp(1.4rem, 5vw, 1.9rem);
+      font-weight: 700;
+      color: var(--gold-light);
+      letter-spacing: 1px;
+      line-height: 1.2;
+    }
+    header p {
+      margin-top: 6px;
+      font-size: .83rem;
+      color: var(--muted);
+      letter-spacing: .5px;
+    }
+    .header-line {
+      width: 60px; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+      margin: 14px auto 0;
+    }
+
+    /* ── TABS ── */
+    .tabs {
+      display: flex;
+      margin: 4px 16px 0;
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 4px;
+      gap: 4px;
+      border: 1px solid var(--border);
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 9px 6px;
+      background: transparent;
+      border: none;
+      border-radius: 10px;
+      font-family: 'Lato', sans-serif;
+      font-size: .78rem;
+      font-weight: 700;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all .25s;
+      letter-spacing: .4px;
+    }
+    .tab-btn.active {
+      background: linear-gradient(135deg, var(--gold), #a87d2a);
+      color: #1a1000;
+    }
+
+    /* ── SECTIONS ── */
+    .section { display: none; padding: 0 16px; }
+    .section.active { display: block; animation: fadeUp .35s ease; }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:none} }
+
+    /* ── CARD ── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      margin-top: 14px;
+    }
+    .card-title {
+      font-family: 'Cinzel', serif;
+      font-size: .85rem;
+      color: var(--gold);
+      letter-spacing: 1px;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-title .icon { font-size: 1rem; }
+
+    /* ── MEMBER LIST ── */
+    .member-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 11px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .member-item:last-child { border-bottom: none; }
+    .avatar {
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .8rem;
+      font-weight: 700;
+      flex-shrink: 0;
+      letter-spacing: .5px;
+    }
+    .avatar.drums { background: linear-gradient(135deg, #553c9a, #7e3af2); color: #e9d8fd; }
+    .avatar.sound { background: linear-gradient(135deg, #1a4a6b, #2b6cb0); color: #bee3f8; }
+    .avatar.both  { background: linear-gradient(135deg, #744210, var(--gold)); color: #fffbeb; }
+
+    .member-info { flex: 1; min-width: 0; }
+    .member-name { font-size: .88rem; font-weight: 700; color: var(--text); }
+    .member-role {
+      font-size: .72rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .badge {
+      font-size: .65rem;
+      padding: 2px 7px;
+      border-radius: 20px;
+      font-weight: 700;
+      letter-spacing: .3px;
+    }
+    .badge.overlap { background: rgba(252,129,74,0.2); color: var(--warn); }
+    .badge.done    { background: rgba(72,187,120,0.18); color: var(--success); }
+    .badge.pending { background: rgba(113,128,150,0.2); color: var(--muted); }
+
+    /* ── STATUS PROGRESS ── */
+    .progress-bar-wrap {
+      background: rgba(255,255,255,0.05);
+      border-radius: 99px;
+      height: 6px;
+      overflow: hidden;
+      margin: 6px 0 4px;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      border-radius: 99px;
+      background: linear-gradient(90deg, var(--gold), var(--sky));
+      transition: width .6s cubic-bezier(.25,.8,.25,1);
+    }
+
+    /* ── FORM ── */
+    label {
+      display: block;
+      font-size: .78rem;
+      font-weight: 700;
+      color: var(--gold);
+      letter-spacing: .5px;
+      margin-bottom: 6px;
+    }
+    select, input[type=text], input[type=date] {
+      width: 100%;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 11px 14px;
+      color: var(--text);
+      font-family: 'Lato', sans-serif;
+      font-size: .88rem;
+      outline: none;
+      transition: border-color .2s;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+    select:focus, input:focus { border-color: var(--gold); }
+    select option { background: var(--surface); }
+
+    /* ── DATE PICKER CHIPS ── */
+    .date-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .chip {
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: .75rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1.5px solid var(--border);
+      color: var(--muted);
+      background: transparent;
+      transition: all .2s;
+      letter-spacing: .3px;
+    }
+    .chip.selected { border-color: var(--gold); color: var(--gold); background: var(--gold-dim); }
+    .chip:active { transform: scale(.95); }
+
+    /* ── BUTTONS ── */
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: var(--radius);
+      font-family: 'Cinzel', serif;
+      font-size: .85rem;
+      font-weight: 600;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: all .25s;
+      text-align: center;
+    }
+    .btn:active { transform: scale(.97); }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--gold), #a87d2a);
+      color: #1a0f00;
+    }
+    .btn-primary:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+    .btn-sky {
+      background: linear-gradient(135deg, #2b6cb0, #1a365d);
+      color: #bee3f8;
+    }
+    .btn-danger {
+      background: rgba(252,129,129,0.12);
+      border: 1px solid rgba(252,129,129,0.3);
+      color: var(--danger);
+    }
+    .btn + .btn { margin-top: 10px; }
+    .btn-sm {
+      width: auto;
+      padding: 6px 14px;
+      font-size: .73rem;
+    }
+
+    /* ── NOTIFICATION BANNER ── */
+    .notif-banner {
+      position: fixed;
+      top: env(safe-area-inset-top, 16px);
+      left: 50%; transform: translateX(-50%) translateY(-120%);
+      width: calc(100% - 32px); max-width: 440px;
+      background: var(--card);
+      border: 1px solid var(--gold);
+      border-radius: 14px;
+      padding: 14px 18px;
+      display: flex; align-items: center; gap: 12px;
+      box-shadow: 0 8px 40px rgba(0,0,0,.6), 0 0 30px rgba(201,168,76,.15);
+      z-index: 999;
+      transition: transform .4s cubic-bezier(.34,1.56,.64,1);
+    }
+    .notif-banner.show { transform: translateX(-50%) translateY(0); }
+    .notif-icon { font-size: 1.4rem; flex-shrink: 0; }
+    .notif-text { flex: 1; font-size: .83rem; color: var(--text); }
+    .notif-title { font-weight: 700; color: var(--gold); margin-bottom: 2px; }
+    .notif-close { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 1.1rem; padding: 4px; }
+
+    /* ── SCHEDULE GRID ── */
+    .schedule-week {
+      margin-top: 4px;
+    }
+    .schedule-row {
+      display: flex;
+      align-items: stretch;
+      border-bottom: 1px solid var(--border);
+      gap: 0;
+    }
+    .schedule-row:last-child { border-bottom: none; }
+    .sched-date {
+      width: 70px;
+      flex-shrink: 0;
+      padding: 12px 8px;
+      font-size: .72rem;
+      color: var(--muted);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-right: 1px solid var(--border);
+    }
+    .sched-date .day-name { font-size: .65rem; letter-spacing: .5px; text-transform: uppercase; margin-bottom: 2px; }
+    .sched-date .day-num { font-size: 1.2rem; font-weight: 700; color: var(--text); }
+    .sched-assignments {
+      flex: 1;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .sched-role {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .sched-role-label {
+      font-size: .65rem;
+      font-weight: 700;
+      letter-spacing: .5px;
+      text-transform: uppercase;
+      width: 58px;
+      flex-shrink: 0;
+    }
+    .sched-role-label.drums { color: #9f7aea; }
+    .sched-role-label.sound { color: var(--sky); }
+    .sched-name {
+      font-size: .82rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .sched-name.conflict { color: var(--danger); }
+    .no-one { font-size: .75rem; color: var(--muted); font-style: italic; }
+
+    /* ── CONFLICT ALERT ── */
+    .conflict-alert {
+      background: rgba(252,129,129,0.08);
+      border: 1px solid rgba(252,129,129,0.25);
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-top: 10px;
+      font-size: .8rem;
+      color: var(--danger);
+      display: flex; gap: 8px; align-items: flex-start;
+    }
+    .conflict-alert.success {
+      background: rgba(72,187,120,0.08);
+      border-color: rgba(72,187,120,0.25);
+      color: var(--success);
+    }
+
+    /* ── BOTTOM NAV ── */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0; left: 50%;
+      transform: translateX(-50%);
+      width: 100%; max-width: 480px;
+      background: rgba(15,23,42,0.95);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-top: 1px solid var(--border);
+      display: flex;
+      padding: 8px 0 env(safe-area-inset-bottom, 8px);
+      z-index: 100;
+    }
+    .nav-item {
+      flex: 1;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 3px;
+      padding: 4px 0;
+      cursor: pointer;
+      background: none; border: none;
+      transition: all .2s;
+    }
+    .nav-icon { font-size: 1.3rem; transition: transform .2s; }
+    .nav-label { font-size: .62rem; color: var(--muted); font-family: 'Lato', sans-serif; letter-spacing: .5px; }
+    .nav-item.active .nav-icon { transform: scale(1.15); }
+    .nav-item.active .nav-label { color: var(--gold); }
+
+    /* ── MONTH HEADER ── */
+    .month-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .month-title {
+      font-family: 'Cinzel', serif;
+      font-size: .9rem;
+      color: var(--gold-light);
+    }
+    .month-nav { display: flex; gap: 6px; }
+    .month-nav button {
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      background: var(--sky-dim);
+      border: 1px solid rgba(99,179,237,0.2);
+      color: var(--sky);
+      cursor: pointer;
+      font-size: .9rem;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .2s;
+    }
+    .month-nav button:hover { background: rgba(99,179,237,0.2); }
+
+    /* ── CALENDAR MINI ── */
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+      margin-bottom: 12px;
+    }
+    .cal-day-header {
+      text-align: center;
+      font-size: .65rem;
+      font-weight: 700;
+      color: var(--muted);
+      letter-spacing: .5px;
+      padding-bottom: 4px;
+    }
+    .cal-day {
+      aspect-ratio: 1;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .8rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all .2s;
+      color: var(--text);
+      position: relative;
+    }
+    .cal-day.empty { cursor: default; }
+    .cal-day.sunday { color: var(--gold); font-weight: 700; }
+    .cal-day.selected { background: var(--gold); color: #1a0f00; font-weight: 700; }
+    .cal-day.has-event::after {
+      content: '';
+      position: absolute; bottom: 3px;
+      width: 4px; height: 4px;
+      background: var(--sky);
+      border-radius: 50%;
+    }
+    .cal-day.selected::after { background: #1a0f00; }
+    .cal-day:not(.empty):hover:not(.selected) { background: var(--gold-dim); }
+
+    /* ── STATS ── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 10px;
+      text-align: center;
+    }
+    .stat-number {
+      font-family: 'Cinzel', serif;
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--gold-light);
+      line-height: 1;
+    }
+    .stat-label { font-size: .68rem; color: var(--muted); margin-top: 4px; letter-spacing: .3px; }
+
+    /* ── DIVIDER ── */
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 14px 0;
+    }
+
+    /* ── EMPTY STATE ── */
+    .empty-state {
+      text-align: center;
+      padding: 30px 20px;
+      color: var(--muted);
+    }
+    .empty-state .icon { font-size: 2.5rem; margin-bottom: 10px; }
+    .empty-state p { font-size: .83rem; line-height: 1.6; }
+
+    /* ── LOADING SPINNER ── */
+    .spinner {
+      width: 20px; height: 20px;
+      border: 2px solid rgba(201,168,76,0.3);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      display: inline-block; vertical-align: middle; margin-right: 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── INSTALL PROMPT ── */
+    #install-prompt {
+      margin: 14px 16px 0;
+      background: var(--sky-dim);
+      border: 1px solid rgba(99,179,237,0.2);
+      border-radius: var(--radius);
+      padding: 14px;
+      display: none;
+      align-items: center;
+      gap: 12px;
+    }
+    #install-prompt .install-text { flex: 1; font-size: .8rem; color: var(--text); }
+    #install-prompt .install-title { font-weight: 700; color: var(--sky); margin-bottom: 2px; font-size: .85rem; }
+
+    /* ── RESPONSIVE MISC ── */
+    .form-group { margin-bottom: 14px; }
+    .row { display: flex; gap: 10px; }
+    .row > * { flex: 1; }
+
+    .section-title {
+      font-family: 'Cinzel', serif;
+      font-size: 1rem;
+      color: var(--gold-light);
+      margin: 20px 0 0;
+    }
+
+    /* Scrollbar styling */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 4px; }
+  </style>
+</head>
+<body>
+
+<div id="app">
+  <!-- HEADER -->
+  <header>
+    <div class="header-cross">✦ ✦ ✦</div>
+    <h1>Escala Ministério</h1>
+    <p>Sonoplastia &amp; Bateristas</p>
+    <div class="header-line"></div>
+  </header>
+
+  <!-- INSTALL PROMPT -->
+  <div id="install-prompt">
+    <span style="font-size:1.6rem">📲</span>
+    <div class="install-text">
+      <div class="install-title">Instalar App</div>
+      Adicione à tela inicial para usar offline
+    </div>
+    <button class="btn btn-sky btn-sm" onclick="installPWA()">Instalar</button>
+    <button style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1rem;padding:4px" onclick="dismissInstall()">✕</button>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="disponibilidade" onclick="switchTab('disponibilidade', this)">📅 Disponibilidade</button>
+    <button class="tab-btn" data-tab="status" onclick="switchTab('status', this)">👥 Status</button>
+    <button class="tab-btn" data-tab="escala" onclick="switchTab('escala', this)">📋 Escala</button>
+    <button class="tab-btn" data-tab="gestor" onclick="switchTab('gestor', this)">⚙️ Gestor</button>
+  </div>
+
+  <!-- SECTION: DISPONIBILIDADE -->
+  <div id="tab-disponibilidade" class="section active">
+    <div class="card">
+      <div class="card-title"><span class="icon">🥁</span> Disponibilidade — Bateristas</div>
+      <p style="font-size:.78rem;color:var(--muted);margin-bottom:14px;line-height:1.5">
+        Apenas bateristas precisam informar disponibilidade.<br>
+        A sonoplastia é escalada automaticamente pelo sistema.
+      </p>
+
+      <div class="form-group">
+        <label>QUEM SOU EU</label>
+        <select id="sel-member" onchange="onMemberChange()">
+          <option value="">— Selecione seu nome —</option>
+        </select>
+      </div>
+
+      <div id="member-roles" style="display:none">
+        <div class="conflict-alert" id="role-info" style="margin-bottom:12px"></div>
+      </div>
+
+      <div class="form-group">
+        <label>MÊS DE REFERÊNCIA</label>
+        <div class="month-header" style="margin-bottom:8px">
+          <span class="month-title" id="avail-month-label">—</span>
+          <div class="month-nav">
+            <button onclick="changeAvailMonth(-1)">‹</button>
+            <button onclick="changeAvailMonth(1)">›</button>
+          </div>
+        </div>
+        <div class="calendar-grid" id="avail-calendar"></div>
+      </div>
+
+      <div id="selected-dates-wrap" style="display:none">
+        <label>DATAS SELECIONADAS</label>
+        <div class="date-chips" id="selected-date-chips"></div>
+      </div>
+
+      <div id="avail-conflict-warn" class="conflict-alert" style="display:none; margin-top:12px">
+        ⚠️ <span></span>
+      </div>
+
+      <button class="btn btn-primary" style="margin-top:16px" onclick="saveAvailability()" id="btn-save-avail">Confirmar Disponibilidade</button>
+    </div>
+  </div>
+
+  <!-- SECTION: STATUS -->
+  <div id="tab-status" class="section">
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-number" id="stat-total">0</div>
+        <div class="stat-label">Bateristas</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="stat-done">0</div>
+        <div class="stat-label">Confirmados</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="stat-pending">0</div>
+        <div class="stat-label">Pendentes</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <div class="card-title"><span class="icon">🥁</span> Bateristas</div>
+      <div id="list-drums"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="icon">🎛️</span> Sonoplastia</div>
+      <div id="list-sound"></div>
+    </div>
+
+    <div id="all-ready-banner" class="conflict-alert success" style="display:none; margin-top:10px">
+      ✅ Todos registraram disponibilidade! O gestor pode gerar a escala.
+    </div>
+  </div>
+
+  <!-- SECTION: ESCALA -->
+  <div id="tab-escala" class="section">
+    <div id="schedule-empty" class="empty-state">
+      <div class="icon">📋</div>
+      <p>A escala ainda não foi gerada.<br/>O gestor deve confirmar todas as disponibilidades e então gerar a escala.</p>
+    </div>
+    <div id="schedule-content" style="display:none">
+      <div class="card">
+        <div class="card-title">
+          <span class="icon">📅</span>
+          <span id="schedule-month-label">—</span>
+        </div>
+        <div id="schedule-list"></div>
+      </div>
+      <div class="card" style="margin-top:10px">
+        <div class="card-title"><span class="icon">📊</span> Participações no Mês</div>
+        <div id="usage-summary-drums" style="margin-bottom:10px"></div>
+        <div id="usage-summary-sound"></div>
+      </div>
+      <div class="card" style="margin-top:10px">
+        <div class="card-title"><span class="icon">ℹ️</span> Legenda</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;font-size:.75rem">
+          <span style="color:#9f7aea">🥁 Baterista</span>
+          <span style="color:var(--sky)">🎛️ Sonoplastia</span>
+          <span style="color:var(--gold)">⭐ Dupla Função</span>
+          <span style="color:var(--danger)">⚠️ Conflito</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION: GESTOR -->
+  <div id="tab-gestor" class="section">
+    <div class="card">
+      <div class="card-title"><span class="icon">🔐</span> Acesso do Gestor</div>
+      <div id="gestor-lock">
+        <div class="form-group">
+          <label>SENHA DO GESTOR</label>
+          <input type="text" id="gestor-password" placeholder="••••••" style="-webkit-text-security:disc" />
+        </div>
+        <button class="btn btn-primary" onclick="gesторLogin()">Entrar</button>
+      </div>
+      <div id="gestor-panel" style="display:none">
+        <div class="conflict-alert success" style="margin-bottom:14px">
+          ✅ Sessão do gestor ativa
+        </div>
+
+        <label>STATUS GERAL</label>
+        <div class="progress-bar-wrap" style="margin-bottom:4px">
+          <div class="progress-bar-fill" id="gestor-progress" style="width:0%"></div>
+        </div>
+        <div style="font-size:.75rem;color:var(--muted);margin-bottom:14px" id="gestor-progress-label">0 de 0 confirmados</div>
+
+        <div id="gestor-pending-list"></div>
+
+        <hr class="divider">
+
+        <label>PERÍODO DA ESCALA</label>
+        <div class="row form-group">
+          <div>
+            <label style="font-size:.7rem">DE</label>
+            <input type="date" id="sched-start" />
+          </div>
+          <div>
+            <label style="font-size:.7rem">ATÉ</label>
+            <input type="date" id="sched-end" />
+          </div>
+        </div>
+
+        <button class="btn btn-primary" id="btn-generate" onclick="generateSchedule()" disabled>
+          ✨ Gerar Escala Automaticamente
+        </button>
+        <button class="btn btn-sky" style="margin-top:10px" onclick="notifyAll()">
+          🔔 Notificar Todos os Membros
+        </button>
+        <button class="btn btn-danger" style="margin-top:10px" onclick="resetAll()">
+          🗑️ Resetar Disponibilidades
+        </button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="icon">👥</span> Gerenciar Membros</div>
+      <div id="member-manage-list"></div>
+      <hr class="divider">
+      <div class="form-group">
+        <label>NOVO MEMBRO</label>
+        <input type="text" id="new-member-name" placeholder="Nome completo" />
+      </div>
+      <div class="form-group">
+        <label>FUNÇÃO</label>
+        <select id="new-member-role">
+          <option value="drums">🥁 Baterista</option>
+          <option value="sound">🎛️ Sonoplastia</option>
+          <option value="both">⭐ Baterista + Sonoplastia</option>
+        </select>
+      </div>
+      <button class="btn btn-sky" onclick="addMember()">+ Adicionar Membro</button>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <button class="nav-item active" data-tab="disponibilidade" onclick="switchTab('disponibilidade', null, this)">
+    <span class="nav-icon">📅</span>
+    <span class="nav-label">Disponib.</span>
+  </button>
+  <button class="nav-item" data-tab="status" onclick="switchTab('status', null, this)">
+    <span class="nav-icon">👥</span>
+    <span class="nav-label">Status</span>
+  </button>
+  <button class="nav-item" data-tab="escala" onclick="switchTab('escala', null, this)">
+    <span class="nav-icon">📋</span>
+    <span class="nav-label">Escala</span>
+  </button>
+  <button class="nav-item" data-tab="gestor" onclick="switchTab('gestor', null, this)">
+    <span class="nav-icon">⚙️</span>
+    <span class="nav-label">Gestor</span>
+  </button>
+</nav>
+
+<!-- NOTIFICATION BANNER -->
+<div class="notif-banner" id="notif-banner">
+  <span class="notif-icon" id="notif-icon">🔔</span>
+  <div class="notif-text">
+    <div class="notif-title" id="notif-title">Notificação</div>
+    <div id="notif-body">Mensagem aqui</div>
+  </div>
+  <button class="notif-close" onclick="hideNotif()">✕</button>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════
+//  STATE — persisted in localStorage
+// ══════════════════════════════════════════════════════
+const STORE_KEY = 'escala-ministerio-v3';
+
+const DEFAULT_STATE = {
+  members: [
+    // ⭐ Dupla função: Sonoplastia + Bateria
+    { id: 'm1', name: 'Alexandre',      role: 'both',  initials: 'AL' },
+    { id: 'm2', name: 'Danilo',         role: 'both',  initials: 'DN' },
+    // 🎛️ Sonoplastia
+    { id: 'm3', name: 'Clarice',        role: 'sound', initials: 'CL' },
+    { id: 'm4', name: 'Guilherme Testa',role: 'sound', initials: 'GT' },
+    { id: 'm5', name: 'Kevin',          role: 'sound', initials: 'KV' },
+    // 🥁 Bateria
+    { id: 'm6', name: 'João Gabriel',   role: 'drums', initials: 'JG' },
+    { id: 'm7', name: 'Marcelo',        role: 'drums', initials: 'MC' },
+  ],
+  availability: {},      // { memberId: { 'YYYY-MM-DD': true } }
+  schedule: null,        // generated schedule
+  gestor_session: false,
+  gestor_password: 'gestor123',
+  current_period: { start: null, end: null },
+};
+
+let state = loadState();
+let availMonth = new Date();
+availMonth.setDate(1);
+let selectedDates = new Set();
+let deferredInstall = null;
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      // Merge with defaults in case new keys were added
+      return { ...DEFAULT_STATE, ...parsed, members: parsed.members || DEFAULT_STATE.members };
+    }
+  } catch(e) {}
+  return JSON.parse(JSON.stringify(DEFAULT_STATE));
+}
+
+function saveState() {
+  localStorage.setItem(STORE_KEY, JSON.stringify(state));
+}
+
+// ══════════════════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════════════════
+function switchTab(tabId, tabBtnEl, navBtnEl) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+
+  document.getElementById('tab-' + tabId).classList.add('active');
+
+  // sync both tabs and nav
+  document.querySelectorAll(`[data-tab="${tabId}"]`).forEach(el => {
+    if (el.classList.contains('tab-btn') || el.classList.contains('nav-item')) {
+      el.classList.add('active');
+    }
+  });
+
+  if (tabId === 'status') renderStatus();
+  if (tabId === 'escala') renderScheduleView();
+  if (tabId === 'gestor') renderGestorPanel();
+}
+
+// ══════════════════════════════════════════════════════
+//  MEMBER SELECTOR
+// ══════════════════════════════════════════════════════
+// Apenas bateristas (e dupla função) precisam informar disponibilidade
+function needsAvailability(m) { return m.role === 'drums' || m.role === 'both'; }
+
+function populateMemberSelect() {
+  const sel = document.getElementById('sel-member');
+  sel.innerHTML = '<option value="">— Selecione seu nome —</option>';
+  state.members.filter(needsAvailability).forEach(m => {
+    sel.innerHTML += `<option value="${m.id}">${m.name}</option>`;
+  });
+}
+
+function onMemberChange() {
+  const id = document.getElementById('sel-member').value;
+  if (!id) { document.getElementById('member-roles').style.display = 'none'; return; }
+  const m = state.members.find(x => x.id === id);
+  const roleEl = document.getElementById('role-info');
+  const roleTexts = {
+    drums: '🥁 Você é <strong>Baterista</strong>. Selecione os domingos em que estará disponível.',
+    both:  '⭐ Você atua em <strong>Bateria e Sonoplastia</strong>. Selecione os domingos disponíveis para a bateria — o sistema te escalará em apenas uma função por domingo.',
+  };
+  roleEl.innerHTML = roleTexts[m.role];
+  document.getElementById('member-roles').style.display = 'block';
+
+  // Restore existing selections
+  const existing = state.availability[id] || {};
+  selectedDates = new Set(Object.keys(existing).filter(k => existing[k]));
+  renderAvailCalendar();
+}
+
+// ══════════════════════════════════════════════════════
+//  CALENDAR RENDER
+// ══════════════════════════════════════════════════════
+const MONTHS_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const DAYS_PT   = ['D','S','T','Q','Q','S','S'];
+
+function changeAvailMonth(delta) {
+  availMonth.setMonth(availMonth.getMonth() + delta);
+  renderAvailCalendar();
+}
+
+function renderAvailCalendar() {
+  const label = document.getElementById('avail-month-label');
+  label.textContent = MONTHS_PT[availMonth.getMonth()] + ' ' + availMonth.getFullYear();
+
+  const grid = document.getElementById('avail-calendar');
+  grid.innerHTML = '';
+
+  // day headers
+  DAYS_PT.forEach(d => {
+    const h = document.createElement('div');
+    h.className = 'cal-day-header';
+    h.textContent = d;
+    grid.appendChild(h);
+  });
+
+  const firstDay = new Date(availMonth.getFullYear(), availMonth.getMonth(), 1).getDay();
+  const daysInMonth = new Date(availMonth.getFullYear(), availMonth.getMonth() + 1, 0).getDate();
+
+  // empty cells
+  for (let i = 0; i < firstDay; i++) {
+    const el = document.createElement('div');
+    el.className = 'cal-day empty';
+    grid.appendChild(el);
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const date = new Date(availMonth.getFullYear(), availMonth.getMonth(), d);
+    const key  = dateKey(date);
+    const isSunday = date.getDay() === 0;
+
+    const el = document.createElement('div');
+    el.className = 'cal-day' + (isSunday ? ' sunday' : '') + (selectedDates.has(key) ? ' selected' : '');
+    el.textContent = d;
+
+    if (isSunday) {
+      el.onclick = () => toggleDate(key, el);
+    } else {
+      el.style.opacity = '.35';
+      el.style.cursor = 'default';
+    }
+
+    grid.appendChild(el);
+  }
+
+  renderSelectedChips();
+}
+
+function toggleDate(key, el) {
+  if (selectedDates.has(key)) {
+    selectedDates.delete(key);
+    el.classList.remove('selected');
+  } else {
+    selectedDates.add(key);
+    el.classList.add('selected');
+  }
+  renderSelectedChips();
+  checkConflicts();
+}
+
+function renderSelectedChips() {
+  const wrap = document.getElementById('selected-dates-wrap');
+  const chips = document.getElementById('selected-date-chips');
+  const sorted = [...selectedDates].sort();
+  chips.innerHTML = '';
+  sorted.forEach(k => {
+    const d = new Date(k + 'T00:00:00');
+    const chip = document.createElement('div');
+    chip.className = 'chip selected';
+    chip.textContent = d.toLocaleDateString('pt-BR', { day:'2-digit', month:'short' });
+    chip.onclick = () => {
+      selectedDates.delete(k);
+      renderAvailCalendar();
+    };
+    chips.appendChild(chip);
+  });
+  wrap.style.display = selectedDates.size ? 'block' : 'none';
+}
+
+function checkConflicts() {
+  const memberId = document.getElementById('sel-member').value;
+  const warn = document.getElementById('avail-conflict-warn');
+  if (!memberId) { warn.style.display = 'none'; return; }
+  const m = state.members.find(x => x.id === memberId);
+  if (m.role !== 'both') { warn.style.display = 'none'; return; }
+
+  // For 'both' members, just inform they'll be scheduled in only one role per date
+  if (selectedDates.size > 0) {
+    warn.style.display = 'flex';
+    warn.querySelector('span').textContent = 'Como você toca e opera som, o sistema te escalará em apenas uma função por domingo para evitar sobreposição.';
+  } else {
+    warn.style.display = 'none';
+  }
+}
+
+function saveAvailability() {
+  const memberId = document.getElementById('sel-member').value;
+  if (!memberId) { showNotif('⚠️', 'Atenção', 'Selecione seu nome primeiro.'); return; }
+  if (selectedDates.size === 0) { showNotif('⚠️', 'Atenção', 'Selecione ao menos uma data disponível.'); return; }
+
+  state.availability[memberId] = {};
+  selectedDates.forEach(k => { state.availability[memberId][k] = true; });
+  saveState();
+
+  const m = state.members.find(x => x.id === memberId);
+  showNotif('✅', 'Disponibilidade Salva', `${m.name}, suas datas foram registradas com sucesso!`);
+
+  checkAllReady();
+}
+
+function checkAllReady() {
+  const required = state.members.filter(needsAvailability);
+  const done     = required.filter(m => Object.keys(state.availability[m.id] || {}).length > 0).length;
+  if (done === required.length) {
+    setTimeout(() => showNotif('🎉', 'Todos Prontos!', 'Todos os bateristas registraram disponibilidade. Gestor pode gerar a escala!'), 1200);
+  }
+}
+
+// ══════════════════════════════════════════════════════
+//  STATUS TAB
+// ══════════════════════════════════════════════════════
+function renderStatus() {
+  const drums = state.members.filter(m => m.role === 'drums' || m.role === 'both');
+  const sound = state.members.filter(m => m.role === 'sound' || m.role === 'both');
+
+  const required = state.members.filter(needsAvailability);
+  const done = required.filter(m => Object.keys(state.availability[m.id] || {}).length > 0).length;
+
+  document.getElementById('stat-total').textContent = required.length;
+  document.getElementById('stat-done').textContent = done;
+  document.getElementById('stat-pending').textContent = required.length - done;
+
+  renderMemberList('list-drums', drums);
+  renderMemberList('list-sound', sound);
+
+  const allReady = done === required.length;
+  document.getElementById('all-ready-banner').style.display = allReady ? 'flex' : 'none';
+}
+
+function renderMemberList(containerId, members) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = '';
+  members.forEach(m => {
+    let badgeCls, badgeTxt;
+    if (m.role === 'sound') {
+      // Sonoplastia pura: sempre disponível, sem necessidade de informar
+      badgeCls = 'done';
+      badgeTxt = '♥ Sempre disponível';
+    } else {
+      const avail = state.availability[m.id] || {};
+      const hasDates = Object.keys(avail).length > 0;
+      badgeCls = hasDates ? 'done' : 'pending';
+      badgeTxt = hasDates ? `✓ ${Object.keys(avail).length} data(s)` : 'Pendente';
+    }
+    const overlappingBadge = m.role === 'both' ? `<span class="badge overlap">Dupla Função</span>` : '';
+
+    el.innerHTML += `
+      <div class="member-item">
+        <div class="avatar ${m.role}">${m.initials}</div>
+        <div class="member-info">
+          <div class="member-name">${m.name}</div>
+          <div class="member-role">${roleLabel(m.role)} ${overlappingBadge}</div>
+        </div>
+        <span class="badge ${badgeCls}">${badgeTxt}</span>
+      </div>`;
+  });
+}
+
+function roleLabel(r) {
+  return { drums:'🥁 Baterista', sound:'🎛️ Sonoplastia', both:'⭐ Bateria + Som' }[r] || r;
+}
+
+// ══════════════════════════════════════════════════════
+//  SCHEDULE GENERATION
+//  Regras:
+//  1. Todos os membros devem ser escalados ao longo do mês
+//  2. Evitar repetição na mesma função (priorizar quem foi menos vezes)
+//  3. Membros 'both' nunca escalam nas duas funções no mesmo domingo
+//  4. Sonoplastia pura: sempre disponível; bateristas: só se declararam disponibilidade
+// ══════════════════════════════════════════════════════
+function generateSchedule() {
+  const start = document.getElementById('sched-start').value;
+  const end   = document.getElementById('sched-end').value;
+  if (!start || !end) { showNotif('⚠️', 'Atenção', 'Defina o período da escala.'); return; }
+
+  const btn = document.getElementById('btn-generate');
+  btn.innerHTML = '<span class="spinner"></span> Gerando...';
+  btn.disabled = true;
+
+  setTimeout(() => {
+    const sundays = getSundaysBetween(start, end);
+    const N = sundays.length;
+
+    // ── Contadores de uso por membro e função ──
+    const usedDrums = {};  // id → count
+    const usedSound = {};  // id → count
+    state.members.forEach(m => { usedDrums[m.id] = 0; usedSound[m.id] = 0; });
+
+    // ── Pré-calcular pools de disponibilidade por domingo ──
+    const drumsPools = {};
+    const soundPools = {};
+    sundays.forEach(dateStr => {
+      drumsPools[dateStr] = state.members.filter(m =>
+        (m.role === 'drums' || m.role === 'both') &&
+        !!(state.availability[m.id] || {})[dateStr]
+      );
+      soundPools[dateStr] = state.members.filter(m => {
+        if (m.role === 'sound') return true;                               // sempre disponível
+        if (m.role === 'both')  return !!(state.availability[m.id] || {})[dateStr];
+        return false;
+      });
+    });
+
+    // ── Scoring: prioriza quem foi menos vezes e quem ainda não foi ──
+    function scoreFor(member, usedMap, totalSlots) {
+      const used = usedMap[member.id] || 0;
+      // Quem nunca foi: máxima prioridade (score negativo)
+      // Depois ordena por menor uso
+      return used === 0 ? -1000 + Math.random() : used + Math.random() * 0.01;
+    }
+
+    function pickBest(pool, usedMap, excludeId, totalSlots) {
+      const candidates = excludeId ? pool.filter(m => m.id !== excludeId) : pool;
+      if (!candidates.length) return null;
+      candidates.sort((a, b) => scoreFor(a, usedMap, totalSlots) - scoreFor(b, usedMap, totalSlots));
+      return candidates[0];
+    }
+
+    // ── Garantir que todos apareçam: forçar inclusão de quem nunca foi ──
+    // Estratégia: duas passagens
+    //   1ª passagem: atribuir normalmente priorizando quem foi menos
+    //   2ª passagem: se algum membro elegível nunca foi, trocar uma entrada onde caberia
+
+    const schedule = [];
+
+    // Passagem 1: atribuição greedy por menor uso
+    sundays.forEach(dateStr => {
+      const dPool = drumsPools[dateStr];
+      const sPool = soundPools[dateStr];
+
+      let drummer = null;
+      let sound   = null;
+
+      // Bateria: preferir drums-only primeiro, depois both
+      const drumsOnly = dPool.filter(m => m.role === 'drums');
+      const bothDrums = dPool.filter(m => m.role === 'both');
+
+      if (drumsOnly.length > 0) {
+        drummer = pickBest(drumsOnly, usedDrums, null, N);
+      } else if (bothDrums.length > 0) {
+        drummer = pickBest(bothDrums, usedDrums, null, N);
+      }
+
+      if (drummer) usedDrums[drummer.id]++;
+
+      // Sonoplastia: excluir quem já foi escalado na bateria (se 'both')
+      const excludeFromSound = (drummer && drummer.role === 'both') ? drummer.id : null;
+      sound = pickBest(sPool, usedSound, excludeFromSound, N);
+
+      // Se só sobrou o mesmo 'both' do drummer, aceita com flag de conflito
+      if (!sound && sPool.length > 0) {
+        sound = { ...sPool[0], conflict: true };
+      }
+
+      if (sound) usedSound[sound.id]++;
+
+      schedule.push({ date: dateStr, drummer, sound });
+    });
+
+    // Passagem 2: garantir que ninguém fique sem aparecer nenhuma vez
+    // Para cada membro elegível que usedDrums/usedSound === 0, tentar encaixá-lo
+
+    // Bateristas sem nenhuma aparição
+    const drumMembers = state.members.filter(m => m.role === 'drums' || m.role === 'both');
+    drumMembers.forEach(absent => {
+      if (usedDrums[absent.id] > 0) return; // já foi escalado
+      // Achar um domingo onde absent está disponível e o baterista atual foi mais de uma vez
+      for (let i = 0; i < schedule.length; i++) {
+        const entry = schedule[i];
+        const dateStr = entry.date;
+        if (!(drumsPools[dateStr].find(m => m.id === absent.id))) continue; // não disponível
+        const current = entry.drummer;
+        if (!current) continue;
+        if (usedDrums[current.id] <= 1) continue; // não trocar quem só foi uma vez
+        // Trocar
+        usedDrums[current.id]--;
+        usedDrums[absent.id]++;
+        schedule[i] = { ...entry, drummer: absent };
+        break;
+      }
+    });
+
+    // Membros de sonoplastia sem nenhuma aparição
+    const soundMembers = state.members.filter(m => m.role === 'sound' || m.role === 'both');
+    soundMembers.forEach(absent => {
+      if (usedSound[absent.id] > 0) return;
+      for (let i = 0; i < schedule.length; i++) {
+        const entry = schedule[i];
+        const dateStr = entry.date;
+        if (!(soundPools[dateStr].find(m => m.id === absent.id))) continue;
+        const current = entry.sound;
+        if (!current || current.conflict) continue;
+        // Não trocar se causaria conflito com baterista 'both' no mesmo domingo
+        if (absent.role === 'both' && entry.drummer && entry.drummer.id === absent.id) continue;
+        if (usedSound[current.id] <= 1) continue;
+        usedSound[current.id]--;
+        usedSound[absent.id]++;
+        schedule[i] = { ...entry, sound: absent };
+        break;
+      }
+    });
+
+    state.schedule = {
+      entries: schedule,
+      period: { start, end },
+      generatedAt: new Date().toISOString(),
+      usedDrums,
+      usedSound,
+    };
+    state.current_period = { start, end };
+    saveState();
+
+    btn.innerHTML = '✨ Gerar Escala Automaticamente';
+    btn.disabled = false;
+
+    showNotif('🎉', 'Escala Gerada!', 'A escala foi criada com sucesso. Confira na aba Escala.');
+    switchTab('escala');
+  }, 1200);
+}
+
+function getSundaysBetween(startStr, endStr) {
+  const sundays = [];
+  const d = new Date(startStr + 'T00:00:00');
+  const end = new Date(endStr + 'T00:00:00');
+  while (d.getDay() !== 0) d.setDate(d.getDate() + 1);
+  while (d <= end) {
+    sundays.push(dateKey(d));
+    d.setDate(d.getDate() + 7);
+  }
+  return sundays;
+}
+
+// ══════════════════════════════════════════════════════
+//  SCHEDULE VIEW
+// ══════════════════════════════════════════════════════
+function renderScheduleView() {
+  const empty   = document.getElementById('schedule-empty');
+  const content = document.getElementById('schedule-content');
+
+  if (!state.schedule) {
+    empty.style.display = 'block'; content.style.display = 'none'; return;
+  }
+
+  empty.style.display = 'none'; content.style.display = 'block';
+
+  const p = state.schedule.period;
+  const s = new Date(p.start + 'T00:00:00');
+  const e = new Date(p.end   + 'T00:00:00');
+  document.getElementById('schedule-month-label').textContent =
+    `Escala — ${s.toLocaleDateString('pt-BR',{month:'long'})} a ${e.toLocaleDateString('pt-BR',{month:'long', year:'numeric'})}`;
+
+  const list = document.getElementById('schedule-list');
+  list.innerHTML = '';
+
+  state.schedule.entries.forEach(entry => {
+    const d = new Date(entry.date + 'T00:00:00');
+    const row = document.createElement('div');
+    row.className = 'schedule-row';
+
+    const dateDiv = `
+      <div class="sched-date">
+        <div class="day-name">${d.toLocaleDateString('pt-BR',{weekday:'short'})}</div>
+        <div class="day-num">${d.getDate()}</div>
+        <div style="font-size:.6rem;color:var(--gold)">${MONTHS_PT[d.getMonth()].substring(0,3)}</div>
+      </div>`;
+
+    const drumName = entry.drummer ? entry.drummer.name : null;
+    const soundName = entry.sound  ? (entry.sound.conflict ? entry.sound.name + ' ⚠️' : entry.sound.name) : null;
+
+    const assignDiv = `
+      <div class="sched-assignments">
+        <div class="sched-role">
+          <span class="sched-role-label drums">🥁 Bateria</span>
+          <span class="sched-name ${!drumName ? '' : ''}">${drumName || '<span class="no-one">Sem escalado</span>'}</span>
+        </div>
+        <div class="sched-role">
+          <span class="sched-role-label sound">🎛️ Som</span>
+          <span class="sched-name ${entry.sound?.conflict ? 'conflict' : ''}">${soundName || '<span class="no-one">Sem escalado</span>'}</span>
+        </div>
+      </div>`;
+
+    row.innerHTML = dateDiv + assignDiv;
+    list.appendChild(row);
+  });
+
+  // ── Resumo de participações ──
+  renderUsageSummary();
+}
+
+function renderUsageSummary() {
+  const sched = state.schedule;
+  if (!sched) return;
+
+  // Recompute from entries in case state.usedDrums is stale
+  const usedD = {}, usedS = {};
+  state.members.forEach(m => { usedD[m.id] = 0; usedS[m.id] = 0; });
+  sched.entries.forEach(e => {
+    if (e.drummer) usedD[e.drummer.id] = (usedD[e.drummer.id] || 0) + 1;
+    if (e.sound && !e.sound.conflict) usedS[e.sound.id] = (usedS[e.sound.id] || 0) + 1;
+  });
+
+  function renderGroup(containerId, members, usedMap, roleColor, roleIcon) {
+    const el = document.getElementById(containerId);
+    if (!el) return;
+    const max = Math.max(1, ...members.map(m => usedMap[m.id] || 0));
+    el.innerHTML = `<div style="font-size:.7rem;font-weight:700;color:var(--muted);letter-spacing:.5px;margin-bottom:8px">${roleIcon} VEZES ESCALADO</div>`;
+    members.forEach(m => {
+      const count = usedMap[m.id] || 0;
+      const pct   = Math.round(count / max * 100);
+      const warn  = count === 0 ? ' style="opacity:.5"' : '';
+      el.innerHTML += \`
+        <div style="margin-bottom:8px"\${warn}>
+          <div style="display:flex;justify-content:space-between;font-size:.78rem;margin-bottom:3px">
+            <span style="color:var(--text)">\${m.name}</span>
+            <span style="color:\${roleColor};font-weight:700">\${count}x</span>
+          </div>
+          <div style="background:rgba(255,255,255,0.05);border-radius:99px;height:5px;overflow:hidden">
+            <div style="height:100%;border-radius:99px;background:\${roleColor};width:\${pct}%;transition:width .6s"></div>
+          </div>
+        </div>\`;
+    });
+  }
+
+  const drumMembers  = state.members.filter(m => m.role === 'drums' || m.role === 'both');
+  const soundMembers = state.members.filter(m => m.role === 'sound' || m.role === 'both');
+
+  renderGroup('usage-summary-drums', drumMembers, usedD, '#9f7aea', '🥁 Bateria');
+  renderGroup('usage-summary-sound', soundMembers, usedS, 'var(--sky)', '🎛️ Sonoplastia');
+}
+
+// ══════════════════════════════════════════════════════
+//  GESTOR PANEL
+// ══════════════════════════════════════════════════════
+function gesторLogin() {
+  const pw = document.getElementById('gestor-password').value;
+  if (pw === state.gestor_password) {
+    state.gestor_session = true;
+    saveState();
+    document.getElementById('gestor-lock').style.display = 'none';
+    document.getElementById('gestor-panel').style.display = 'block';
+    showNotif('🔓', 'Acesso Concedido', 'Bem-vindo, Gestor!');
+    renderGestorPanel();
+  } else {
+    showNotif('❌', 'Senha Incorreta', 'Verifique a senha e tente novamente.');
+  }
+}
+
+function renderGestorPanel() {
+  if (!state.gestor_session) {
+    document.getElementById('gestor-lock').style.display = 'block';
+    document.getElementById('gestor-panel').style.display = 'none';
+    return;
+  }
+  document.getElementById('gestor-lock').style.display = 'none';
+  document.getElementById('gestor-panel').style.display = 'block';
+
+  const required = state.members.filter(needsAvailability);
+  const total  = required.length;
+  const done   = required.filter(m => Object.keys(state.availability[m.id] || {}).length > 0).length;
+  const pct    = total ? Math.round(done / total * 100) : 0;
+
+  document.getElementById('gestor-progress').style.width = pct + '%';
+  document.getElementById('gestor-progress-label').textContent = `${done} de ${total} bateristas confirmados`;
+
+  const allReady = done === total;
+  document.getElementById('btn-generate').disabled = !allReady;
+
+  // Pending list (only drums/both)
+  const pendingEl = document.getElementById('gestor-pending-list');
+  const pending = required.filter(m => !Object.keys(state.availability[m.id] || {}).length);
+  if (pending.length > 0) {
+    pendingEl.innerHTML = `<div class="conflict-alert" style="margin-bottom:10px">⏳ Aguardando bateristas: ${pending.map(m => m.name).join(', ')}</div>`;
+  } else {
+    pendingEl.innerHTML = '';
+  }
+
+  // Default period: current month's sundays
+  if (!document.getElementById('sched-start').value) {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    const end   = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    document.getElementById('sched-start').value = dateKey(start);
+    document.getElementById('sched-end').value   = dateKey(end);
+  }
+
+  renderMemberManage();
+}
+
+function renderMemberManage() {
+  const el = document.getElementById('member-manage-list');
+  el.innerHTML = '';
+  state.members.forEach(m => {
+    el.innerHTML += `
+      <div class="member-item">
+        <div class="avatar ${m.role}">${m.initials}</div>
+        <div class="member-info">
+          <div class="member-name">${m.name}</div>
+          <div class="member-role">${roleLabel(m.role)}</div>
+        </div>
+        <button class="btn btn-danger btn-sm" onclick="removeMember('${m.id}')">✕</button>
+      </div>`;
+  });
+}
+
+function addMember() {
+  const name = document.getElementById('new-member-name').value.trim();
+  const role = document.getElementById('new-member-role').value;
+  if (!name) { showNotif('⚠️', 'Atenção', 'Digite o nome do membro.'); return; }
+
+  const initials = name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+  const id = 'm' + Date.now();
+  state.members.push({ id, name, role, initials });
+  saveState();
+  document.getElementById('new-member-name').value = '';
+  renderMemberManage();
+  populateMemberSelect();
+  showNotif('✅', 'Membro Adicionado', `${name} foi adicionado com sucesso.`);
+}
+
+function removeMember(id) {
+  state.members = state.members.filter(m => m.id !== id);
+  delete state.availability[id];
+  saveState();
+  renderMemberManage();
+  populateMemberSelect();
+  showNotif('🗑️', 'Membro Removido', 'O membro foi removido da lista.');
+}
+
+function notifyAll() {
+  showNotif('🔔', 'Notificação Enviada', 'Todos os membros foram notificados para confirmar disponibilidade.');
+}
+
+function resetAll() {
+  if (confirm('Tem certeza? Isso apagará todas as disponibilidades registradas.')) {
+    state.availability = {};
+    state.schedule = null;
+    saveState();
+    showNotif('🔄', 'Resetado', 'Todas as disponibilidades foram apagadas.');
+    renderGestorPanel();
+  }
+}
+
+// ══════════════════════════════════════════════════════
+//  NOTIFICATIONS
+// ══════════════════════════════════════════════════════
+let notifTimer = null;
+
+function showNotif(icon, title, body) {
+  document.getElementById('notif-icon').textContent  = icon;
+  document.getElementById('notif-title').textContent = title;
+  document.getElementById('notif-body').textContent  = body;
+
+  const banner = document.getElementById('notif-banner');
+  banner.classList.add('show');
+  clearTimeout(notifTimer);
+  notifTimer = setTimeout(hideNotif, 4000);
+}
+
+function hideNotif() {
+  document.getElementById('notif-banner').classList.remove('show');
+}
+
+// ══════════════════════════════════════════════════════
+//  PWA INSTALL
+// ══════════════════════════════════════════════════════
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredInstall = e;
+  document.getElementById('install-prompt').style.display = 'flex';
+});
+
+function installPWA() {
+  if (!deferredInstall) return;
+  deferredInstall.prompt();
+  deferredInstall.userChoice.then(() => {
+    deferredInstall = null;
+    dismissInstall();
+  });
+}
+
+function dismissInstall() {
+  document.getElementById('install-prompt').style.display = 'none';
+}
+
+window.addEventListener('appinstalled', () => {
+  showNotif('📲', 'App Instalado!', 'Escala Ministério está na sua tela inicial.');
+  dismissInstall();
+});
+
+// ══════════════════════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════════════════════
+function dateKey(d) {
+  return d.getFullYear() + '-' +
+    String(d.getMonth() + 1).padStart(2, '0') + '-' +
+    String(d.getDate()).padStart(2, '0');
+}
+
+// ══════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════
+function init() {
+  populateMemberSelect();
+  renderAvailCalendar();
+
+  // Request notification permission
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+
+  // Register service worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+
+  // If gestor session was persisted
+  if (state.gestor_session) {
+    document.getElementById('gestor-lock').style.display = 'none';
+    document.getElementById('gestor-panel').style.display = 'block';
+  }
+
+  // Welcome notification
+  setTimeout(() => showNotif('🙏', 'Bem-vindo(a)!', 'Registre sua disponibilidade para os próximos cultos.'), 800);
+}
+
+init();
+</script>
+</body>
+</html>
